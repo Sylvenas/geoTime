@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>lmap</title>
+    <meta charset="utf-8" />
+    <link href="libs/leaflet.css" rel="stylesheet" />
+    <style>
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        #btn {
+            position: absolute;
+            top: 30px;
+            right: 100px;
+            z-index: 500;
+        }
+        
+        #lab {
+            position: absolute;
+            top: 60px;
+            right: 100px;
+            z-index: 500;
+            color: red;
+        }
+        
+        #clear {
+            position: absolute;
+            top: 90px;
+            right: 100px;
+            z-index: 500;
+            color: red;
+        }
+        
+        #up {
+            position: absolute;
+            top: 30px;
+            right: 220px;
+            z-index: 500;
+        }
+        
+        #down {
+            position: absolute;
+            top: 30px;
+            right: 250px;
+            z-index: 500;
+        }
+        
+        #speed {
+            position: absolute;
+            top: 30px;
+            right: 150px;
+            z-index: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map">
+        <input type="button" id="btn" value="play" onclick="markerPlayBack.start()" />
+        <label id="lab"></label>
+        <input type="button" id='up' value="+" onclick="markerPlayBack.speedUp()" />
+        <input type="button" id='down' value="-" onclick="markerPlayBack.speedDown()" />
+        <input type="button" id='speed' value="1000" />
+        <input type="button" id='clear' value="clearMap" onclick="markerPlayBack.clearLayer()" />
+    </div>
+    <script src="libs/leaflet.js"></script>
+    <script src="src/geoTime.js"></script>
+    <script src="data/data.js"></script>
+    <script>
+        var map = new L.Map('map');
+
+        var basemapLayer = new L.TileLayer('http://{s}.tiles.mapbox.com/v3/github.map-xgq2svrz/{z}/{x}/{y}.png');
+
+        // Center map and default zoom level
+        map.setView([31.85, 119.91], 10);
+
+        // Adds the background layer to the map
+        map.addLayer(basemapLayer);
+        var CZ = {
+            "type": "FeatureCollection",
+            "features":
+                [
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [119.91, 31.85] },
+                        "properties":
+                            {
+                                "time": [["08:22-13:00", 1.1], ["08:22-13:05", 5.5], ["08:22-13:10", 9.9], ["08:22-13:15", 3], ["08:22-13:20", 7]],
+                                "name": "友谊路",
+                                "id": "1"
+                            }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [119.81, 31.80] },
+                        "properties":
+                            {
+                                "time": [["08:22-13:00", 9], ["08:22-13:05", 7.5], ["08:22-13:10", 2.9], ["08:22-13:15", 5], ["08:22-13:20", 1]],
+                                "name": "延陵中路",
+                                "id": "2"
+                            }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "MultiLineString", "coordinates": [[[119.9, 31.5], [119.9, 31.6]], [[119.8, 31.5], [119.7, 31.4], [119.5, 31.3]]] },
+                        "properties":
+                            {
+                                "time": [["08:22-13:00", 5], ["08:22-13:05", 3.5], ["08:22-13:10", 1.9], ["08:22-13:15", 9], ["08:22-13:20", 3]],
+                                "name": "大洋路",
+                                "id": "3"
+                            }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "LineString", "coordinates": [[119.6, 31.5], [119.1, 31.8], [119.3, 31.4], [119.5, 31.9], [119.0, 31.6]] },
+                        "properties":
+                            {
+                                "time": [["08:22-13:00", 1], ["08:22-13:05", 3], ["08:22-13:10", 5], ["08:22-13:15", 7], ["08:22-13:20", 9]],
+                                "name": "大洋路",
+                                "id": "3"
+                            }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Polygon", "coordinates": [[[121.7, 31.1], [120.5, 31.8], [121.9, 31.6], [121.7, 31.1]]] },
+                        "properties":
+                            {
+                                "time": [["08:22-13:00", 9], ["08:22-13:05", 7.5], ["08:22-13:10", 2.9]],
+                                "name": "大洋路",
+                                "id": "3"
+                            }
+                    }
+                ]
+        };
+
+        var markerPlayBack = L.geoTime(CZ, {
+            map: map,
+            duration: 1000
+        })
+    </script>
+</body>
+
+</html>
