@@ -1,3 +1,4 @@
+/// <reference path="../libs/LeafletPlayback.js" />
 L.GeoTime = L.Class.extend({
     statics: {},
     options: {
@@ -9,12 +10,16 @@ L.GeoTime = L.Class.extend({
         L.setOptions(this, options);
 
         this._map = this.options.map || {};
-        this._duration = this.options.duration || {};
+        this._duration = this.options.duration || 1*60*1000;
+        this._speed = this.options.speed || 1000;
         this._geos = this._geos || [];
         this._features = this._features || [];
         this._ticks = [];
         this._tick = this._tick || 1;
         this._featureGroup = this._featureGroup || {};
+        this._earliestTime = this._earliestTime || 0;
+        this._latestTime = this._latestTime || 0;
+        this._tags = this._tags || [];
         this._initData(geoJSON);
 
         this.start = this._start || {};
@@ -34,13 +39,12 @@ L.GeoTime = L.Class.extend({
         this._geoToLayer();
     },
     _geoToLayer: function () {
-        var lab = document.getElementById('lab');
-        lab.innerHTML = this._geos[0].properties.time[0][0];
-
         for (var i = 0, len = this._geos.length; i < len; i++) {
             var geometry = this._geos[i].geometry,
                 props = this._geos[i].properties;
             this._ticks.push(props.time.length);
+            this._tags.push(0);
+            this._initTime(props);
             switch (geometry.type) {
                 case 'Point':
                     var marker = this._createMaker(geometry.coordinates, props.time[0][1], props.id);
@@ -84,6 +88,8 @@ L.GeoTime = L.Class.extend({
             }
         }
         this._featureGroup = L.featureGroup(this._features).addTo(this._map);
+        var lab = document.getElementById('lab');
+        lab.innerHTML = new Date(this._earliestTime);
     },
     _coordsToLatLng: function (coords) {
         return new L.LatLng(coords[1], coords[0], coords[2]);
@@ -120,10 +126,20 @@ L.GeoTime = L.Class.extend({
                     index > 2 ? '#6AB72D' :
                         '#36AE4C';
     },
+    _initTime: function (props) {
+        var time = this._geos[0].properties.time;
+        this._earliestTime = time[0][0];
+        this._latestTime = time[time.length - 1][0];
+        if (props.time[0][0] < this._earliestTime) {
+            this._earliestTime = props.time[0][0];
+        }
+        if (props.time[props.time.length - 1][0] > this._latestTime) {
+            this._latestTime = props.time[props.time.length - 1][0];
+        }
+    },
     _isPlaying: function () {
         return this._intervalID ? true : false;
     },
-
     _start: function () {
         var btn = document.getElementById('btn');
         if (this._isPlaying()) {
@@ -146,37 +162,42 @@ L.GeoTime = L.Class.extend({
         if (this._intervalID) return;
         this._intervalID = window.setInterval(
             this._animation,
-            this._duration,
+            this._speed,
             this
         );
     },
     _animation: function (self) {
         var lab = document.getElementById('lab');
-        if (self._tick >= Math.max.apply(null, self._ticks)) {
+        if (self._latestTime < self._earliestTime + self._tick * self._duration) {
             clearInterval(self._intervalID);
             return;
         }
         for (var i = 0, len = self._features.length; i < len; i++) {
-            if (self._tick >= self._geos[i].properties.time.length) {
+            if (self._geos[i].properties.time[self._geos[i].properties.time.length-1][0] < self._earliestTime + self._tick * self._duration) {
                 continue;
             }
-            if (self._features[i].options.type == "Line") {
+           
+            if (self._features[i].options.type == "Line" && self._geos[i].properties.time[0] >= self._earliestTime + self._tick * self._duration) {
                 self._features[i].setStyle({
                     color: self._getColor(self._geos[i].properties.time[self._tick][1])
-                })
-            } else {
+                });
+                self._tags[i] = self._tags[i] + 1;
+            } else if (self._geos[i].properties.time[self._tags[i]+1][0] <= self._earliestTime + self._tick * self._duration) {
                 self._features[i].setStyle({
-                    fillColor: self._getColor(self._geos[i].properties.time[self._tick][1])
-                })
+                    fillColor: self._getColor(self._geos[i].properties.time[self._tags[i]+1][1])
+                });
+                self._tags[i] = self._tags[i] + 1;
+                console.log(new Date(self._earliestTime + self._tick * self._duration));
+                console.log("*****");
             }
-            lab.innerHTML = self._geos[i].properties.time[self._tick][0];
+            lab.innerHTML = new Date(self._earliestTime + self._tick * self._duration);
         }
         self._tick++;
     },
 
     _speedUp: function () {
-        this._duration = this._duration + 1000;
-        document.getElementById('speed').value = this._duration;
+        this._speed = this._speed + 1000;
+        document.getElementById('speed').value = this._speed;
 
         if (this._intervalID) {
             this.stop();
@@ -185,16 +206,16 @@ L.GeoTime = L.Class.extend({
     },
 
     _speedDown: function () {
-        if (this._duration > 1000) {
-            this._duration = this._duration - 1000;
+        if (this._speed > 1000) {
+            this._speed = this._speed - 1000;
         } else {
-            if (this._duration > 100)
-                this._duration = this._duration - 100;
+            if (this._speed > 100)
+                this._speed = this._speed - 100;
             else {
-                this._duration = 100;
+                this._speed = 100;
             }
         }
-        document.getElementById('speed').value = this._duration;
+        document.getElementById('speed').value = this._speed;
 
         if (this._intervalID) {
             this.stop();
